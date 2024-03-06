@@ -98,7 +98,7 @@ def main(kwargs):
                 module_hash = api.getModuleHash(model_spec)
                 hashKey_list.append(module_hash)
 
-            archive = {'X': genotype_list, 'hashKey': hashKey_list, 'F': front_archive}
+        archive = {'X': genotype_list, 'hashKey': hashKey_list, 'F': front_archive}
 
         ################################################## Log results #################################################
         if log_results:
