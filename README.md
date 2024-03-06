@@ -27,6 +27,7 @@ This repo have already implemented following NAS algorithms:
 - **(IMS-)NSGA-III**
 - **(IMS-)LOMONAS** (ours)
 
+### CEC'2023 problems
 To experiment on CEC'2023 problems, run the below script:
 ```shell
 $ python main.py --optimizer <algo_name>[lomonas, ims-lomonas, nsga2, nsga3, ims-nsga2, ims-nsga3]
@@ -37,6 +38,7 @@ $ python main.py --optimizer <algo_name>[lomonas, ims-lomonas, nsga2, nsga3, ims
                  --using_archive --check_limited_neighbors --neighborhood_check_on_potential_sols --log_results
 ```
 
+### Other problems
 To experiment on other problems, run the below script:
 ```shell
 $ python main.py --optimizer <algo_name>[lomonas, ims-lomonas]
@@ -58,7 +60,7 @@ where:
 |7         | NAS-Bench-201 | CIFAR-10 | test_err & params | synflow & jacov & params|
 |8         | NAS-Bench-101 | CIFAR-10 | test_err & params | synflow & jacov & params|
 
-To experiment TF-(IMS-)LOMONAS, set `pid` to 7 and 8.
+Set `pid` to 7 and 8 to experiment TF-(IMS-)LOMONAS.
 
 ## Evaluation (only for NAS-Bench-101 and NAS-Bench-201 (GECCO))
 ```shell
