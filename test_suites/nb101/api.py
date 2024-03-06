@@ -22,6 +22,7 @@ import pickle as p
 from test_suites.nb101.lib import config, model_spec as _model_spec
 
 import numpy as np
+from utilities import get_project_root
 
 # Bring ModelSpec to top-level for convenience. See lib/model_spec.py.
 ModelSpec = _model_spec.ModelSpec
@@ -39,10 +40,8 @@ class NASBench:
         else:
             self.data = p.load(open(dataset_file, 'rb'))
 
-        if zc_dataset_file is None:
-            self.zc_data = None
-        else:
-            self.zc_data = p.load(open(zc_dataset_file, 'rb'))
+        root = get_project_root()
+        self.zc_data = p.load(open(f'{root}/database/NASBench101/zc_101.p', 'rb'))
 
     def getModuleHash(self, model_spec):
         return self._hash_spec(model_spec)

@@ -47,7 +47,7 @@ class OurZCNASBench101Evaluator(Evaluator):
         self.api = NASBench(data_file_path)
         self.dataset = dataset
         self.iepoch = iepoch
-        self.cost_time = 0.0
+        self.search_cost = 0.0
 
     @property
     def name(self):
@@ -65,16 +65,16 @@ class OurZCNASBench101Evaluator(Evaluator):
                     top1 = self.api.query(arch, epochs=108, metric='test_acc') * 100
                 else:
                     top1 = self.api.query(arch, epochs=self.iepoch, metric='val_acc') * 100
-                    self.cost_time += self.api.query_time(arch, epochs=self.iepoch, metric='val_acc')
+                    self.search_cost += self.api.query_time(arch, epochs=self.iepoch, metric='val_acc')
                 stats['err'] = 100 - top1
             if 'synflow' in objs:
                 stats['synflow'] = -self.api.query(arch, metric='synflow')
                 if not np.isinf(stats['synflow']):
-                    self.cost_time += time_dict['synflow']
+                    self.search_cost += time_dict['synflow']
             if 'jacov' in objs:
                 stats['jacov'] = -self.api.query(arch, metric='jacob_cov')
                 if not np.isinf(stats['jacov']):
-                    self.cost_time += time_dict['jacob_cov']
+                    self.search_cost += time_dict['jacob_cov']
             if 'params' in objs:
                 stats['params'] = self.api.query(arch, epochs=108, metric='n_params')
             batch_stats.append(stats)

@@ -40,6 +40,8 @@ class OurNASBench101Evaluator(Evaluator):
         self.api = NASBench(data_file_path)
         self.dataset = dataset
         self.iepoch = iepoch
+        self.search_cost = 0.0
+        self.evaluation_cost = 0.0
 
     @property
     def name(self):
@@ -52,13 +54,14 @@ class OurNASBench101Evaluator(Evaluator):
         batch_stats = []
         for arch in archs:
             stats = OrderedDict()
-            if true_eval:
-                top1 = self.api.query(arch, epochs=108, metric='test_acc') * 100
-            else:
-                top1 = self.api.query(arch, epochs=self.iepoch, metric='val_acc') * 100
-
             if 'err' in objs:
+                if true_eval:
+                    top1 = self.api.query(arch, epochs=108, metric='test_acc') * 100
+                else:
+                    top1 = self.api.query(arch, epochs=self.iepoch, metric='val_acc') * 100
+                    self.search_cost += self.api.query_time(arch, epochs=self.iepoch, metric='val_acc')
                 stats['err'] = 100 - top1
+
             if 'params' in objs:
                 stats['params'] = self.api.query(arch, epochs=108, metric='n_params')
 

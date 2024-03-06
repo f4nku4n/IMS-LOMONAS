@@ -8,6 +8,7 @@ from typing import List
 import pickle as p
 from test_suites.utils import define_H
 from test_suites.nb201 import genotype2phenotype, topology_str2structure
+from utilities import get_project_root
 
 from pymoo.indicators.igd import IGD
 from pymoo.indicators.igd_plus import IGDPlus
@@ -91,16 +92,18 @@ class OurZCNASBench201Evaluator(Evaluator):
                  ):
         super().__init__(objs)
         data_file_path = get_path(f'nb201_data_{dataset}.p')
-        zc_data_file_path = get_path(f'zc_nasbench201.json')
 
         self.dataset = dataset
 
         self.data = p.load(open(data_file_path, 'rb'))
-        self.zc_data = json.load(open(zc_data_file_path))
+
+        ROOT_DIR = get_project_root()
+
+        self.zc_data = json.load(open(f'{ROOT_DIR}/database/NASBench201/zc_nasbench201.json'))
 
         self.allowed_ops: List[str] = ['none', 'skip_connect', 'nor_conv_1x1', 'nor_conv_3x3', 'avg_pool_3x3']
         self.iepoch = iepoch
-        self.cost_time = 0.0
+        self.search_cost = 0.0
         self.evaluation_cost = 0.0
 
     @property
@@ -133,18 +136,17 @@ class OurZCNASBench201Evaluator(Evaluator):
                 if true_eval:
                     top1 = self.data['200'][key]['test_acc'][-1] * 100
                     self.evaluation_cost += self.data['200'][key]['train_time']/2 * 200
-                    # print(self.data['200'][key]['train_time']/2, self.data['200'][key]['train_time']/2 * 200)
                 else:
                     top1 = self.data['200'][key]['val_acc'][self.iepoch - 1] * 100
-                    self.cost_time += self.data['200'][key]['train_time']/2 * self.iepoch
+                    self.search_cost += self.data['200'][key]['train_time']/2 * self.iepoch
                 stats['err'] = 100 - top1
             zc_key = str(convert_str_to_op_indices(arch))
             if 'synflow' in objs:
                 stats['synflow'] = -self.zc_data[self.dataset][zc_key]['synflow']['score']
-                self.cost_time += self.zc_data[self.dataset][zc_key]['synflow']['time']
+                self.search_cost += self.zc_data[self.dataset][zc_key]['synflow']['time']
             if 'jacov' in objs:
                 stats['jacov'] = -self.zc_data[self.dataset][zc_key]['jacov']['score']
-                self.cost_time += self.zc_data[self.dataset][zc_key]['jacov']['time']
+                self.search_cost += self.zc_data[self.dataset][zc_key]['jacov']['time']
             if 'params' in objs:
                 stats['params'] = self.data['200'][key]['params']  # in M
             if 'flops' in objs:

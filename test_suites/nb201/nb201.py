@@ -76,6 +76,8 @@ class OurNASBench201Evaluator(Evaluator):
         self.data = p.load(open(data_file_path, 'rb'))
         self.allowed_ops: List[str] = ['none', 'skip_connect', 'nor_conv_1x1', 'nor_conv_3x3', 'avg_pool_3x3']
         self.iepoch = iepoch
+        self.search_cost = 0.0
+        self.evaluation_cost = 0.0
 
     @property
     def name(self):
@@ -103,13 +105,15 @@ class OurNASBench201Evaluator(Evaluator):
         for arch in archs:
             key = self.decode(arch)
             stats = OrderedDict()
-            if true_eval:
-                top1 = self.data['200'][key]['test_acc'][-1] * 100
-            else:
-                top1 = self.data['200'][key]['val_acc'][self.iepoch - 1] * 100
-
             if 'err' in objs:
+                if true_eval:
+                    top1 = self.data['200'][key]['test_acc'][-1] * 100
+                    self.evaluation_cost += self.data['200'][key]['train_time']/2 * 200
+                else:
+                    top1 = self.data['200'][key]['val_acc'][self.iepoch - 1] * 100
+                    self.search_cost += self.data['200'][key]['train_time']/2 * self.iepoch
                 stats['err'] = 100 - top1
+
             if 'params' in objs:
                 stats['params'] = self.data['200'][key]['params']  # in M
             if 'flops' in objs:

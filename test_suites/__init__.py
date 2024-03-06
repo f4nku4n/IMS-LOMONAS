@@ -1,7 +1,6 @@
 from test_suites.macroNAS import MacroNASBenchmark
 from test_suites.nb201 import OurNASBench201Benchmark
 from test_suites.nb101 import OurNASBench101Benchmark
-from test_suites.nats import OurNATSBenchmark
 from test_suites.zc_nb201 import OurZCNASBench201Benchmark
 from test_suites.zc_nb101 import OurZCNASBench101Benchmark
 

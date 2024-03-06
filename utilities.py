@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pymoo.core.callback import Callback
 
+from pathlib import Path
+
+def get_project_root() -> Path:
+    return Path(__file__).parent
+
 # RESULT
 class Result:
     def __init__(self, genotype_list):
