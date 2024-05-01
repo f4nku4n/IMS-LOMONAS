@@ -51,6 +51,8 @@ class MacroNASSearchSpace(SearchSpace):
 
         # create the categories for each variable
         self.categories = [list(range(a, b + 1)) for a, b in zip(self.lb, self.ub)]
+        self.search_cost = 0.0
+        self.evaluation_cost = 0.0
 
     @property
     def name(self):

@@ -1,4 +1,5 @@
-pip install -r requirement.txt
+pip install -r requirements.txt
+pip install --upgrade --no-cache-dir gdown
 
 gdown https://drive.google.com/uc?id=1Ud4GF-3264R0rkqOmBK46L9S_kalN01z -O database/NASBench201/[CIFAR-10]_data.p
 gdown https://drive.google.com/uc?id=1mow6Cqwgs3DnKngF6reF7STsVa7KS15R -O database/NASBench201/[CIFAR-100]_data.p

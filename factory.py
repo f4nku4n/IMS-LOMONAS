@@ -105,13 +105,11 @@ def get_algorithm(name, problem, **kwargs):
     elif name == 'LOMONAS':
         return LOMONAS(nF=kwargs['nF'], neighborhood_check_on_potential_sols=kwargs['neighborhood_check_on_potential_sols'],
                        check_limited_neighbors=kwargs['check_limited_neighbors'], alpha=kwargs['alpha'],
-                       selection_method=kwargs['selection_method'], limit_Q_size=kwargs['limit_Q_size'],
                        evaluator=kwargs['evaluator'], debugger=kwargs['debugger'])
     elif name == 'IMS-LOMONAS':
         return IMS_LOMONAS(base=kwargs['base'],
                            neighborhood_check_on_potential_sols=kwargs['neighborhood_check_on_potential_sols'],
                            check_limited_neighbors=kwargs['check_limited_neighbors'], alpha=kwargs['alpha'],
-                           selection_method=kwargs['selection_method'],
                            perform_termination=kwargs['perform_termination'],
                            evaluator=kwargs['evaluator'], debugger=kwargs['debugger'])
     elif name == 'IMS-NSGA2':

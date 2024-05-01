@@ -46,6 +46,12 @@ def main(kwargs):
     problem = get_problem(test_suite, pid, using_archive=using_archive)
     debugger = Debugger(test_suite=test_suite, verbose=bool(kwargs.verbose))
 
+    configurations = {'problem': {'test_suite': test_suite, 'pid': pid,
+                                  'search_space': problem.benchmark.name,
+                                  'objectives': list(problem.benchmark.evaluator.objs.split('&')),
+                                  'dataset': problem.dataset},
+                      'environment': {'max_eval': max_eval}}
+
     for rid in tqdm(range(n_run)):
         logging.info(f'Run: {rid + 1}')
 
@@ -55,8 +61,6 @@ def main(kwargs):
             name=kwargs.optimizer, problem=problem,
             nF=kwargs.nF, neighborhood_check_on_potential_sols=bool(kwargs.neighborhood_check_on_potential_sols),
             check_limited_neighbors=bool(kwargs.check_limited_neighbors), alpha=kwargs.alpha,
-            selection_method=kwargs.selection_method,
-            limit_Q_size=bool(kwargs.limit_Q_size),
             base=kwargs.base, init_popsize=kwargs.init_popsize,
             using_archive=using_archive,
             allow_duplicates=bool(kwargs.allow_duplicates),
@@ -66,6 +70,12 @@ def main(kwargs):
         seed = rid * 100
         run_stats = {'run': rid + 1, 'seed': seed, 'max_eval': max_eval}
         search_cost = 0.0
+
+        if kwargs.optimizer in ['lomonas', 'ims-lomonas', 'ims-nsga2']:
+            configurations['optimizer'] = algo.hyperparameters
+        if rid == 0:
+            logging.info('Configurations:')
+            print(json.dumps(configurations, indent=1))
 
         if kwargs.optimizer in ['lomonas', 'rs', 'ims-lomonas', 'ims-nsga2', 'ims-nsga3', 'ims-moead', 'nsga2-lomonas']:
             res = algo.solve(problem=problem, seed=seed, max_eval=max_eval, test_suite=test_suite, verbose=verbose)
@@ -141,9 +151,6 @@ if __name__ == '__main__':
                         help='only compare to a fixed number of neighbors (LOMONAS)')
     parser.add_argument('--neighborhood_check_on_potential_sols', action='store_true',
                         help='perform neighborhood check on knee and extreme solutions (LOMONAS)')
-    parser.add_argument('--limit_Q_size', action='store_true',
-                        help='limit #solutions for performing neighborhood (LOMONAS)')
-    parser.add_argument('--selection_method', type=str, default='cdistance', choices=['greedy', 'cdistance', 'random'])
     parser.add_argument('--alpha', type=int, default=210)
 
     parser.add_argument('--base', type=int, default=2, help='for IMS variants')

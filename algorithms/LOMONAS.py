@@ -12,18 +12,13 @@ from core import ElitistArchive, Solution
 
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
 
-from pymoo.core.population import Population
-from pymoo.util.randomized_argsort import randomized_argsort
 from pymoo.util.misc import find_duplicates
-from sklearn.metrics.pairwise import euclidean_distances
 
 sorter = NonDominatedSorting()
 #################################################### LOMONAS #######################################################
 class LOMONAS:
     def __init__(self, name='LOMONAS',
                  nF=3, check_limited_neighbors=False, neighborhood_check_on_potential_sols=False, alpha=210,
-                 selection_method=None,
-                 limit_Q_size=True,
                  archive=None, footprint=None, debugger=None, res_logged=None,
                  evaluator=None, **kwargs):
         """
@@ -52,26 +47,12 @@ class LOMONAS:
         self.S, self.Q = [], []
 
         self.problem, self.max_eval = None, None
-        self.selection_method = selection_method
-
-        self.limit_Q_size = limit_Q_size
 
         self.solutions_collector = None
         self.neighbors_collector = None
 
-        if self.selection_method == 'cdistance':
-            self.selector = crowding_distance_selection
-        elif self.selection_method == 'random':
-            self.selector = random_selection
-        elif self.selection_method == 'greedy':
-            self.selector = greedy_selection
-        else:
-            raise NotImplementedError
-
         self.n_eval = 0
-        self.NIS = 0
 
-        self.sizeQ_logged = []
         self.last_S_fid, self.last_Q = [], []
 
     @property
@@ -82,8 +63,6 @@ class LOMONAS:
             'check_limited_neighbors': self.check_limited_neighbors,
             'neighborhood_check_on_potential_sols': self.neighborhood_check_on_potential_sols,
             'alpha': self.alpha,
-            'limit_Q_size': self.limit_Q_size,
-            'selection_method': self.selection_method
         }
 
     def set(self, key_value):
@@ -97,7 +76,7 @@ class LOMONAS:
         self._setup(**kwargs)
 
     def _setup(self, **kwargs):
-        if self.neighborhood_check_on_potential_sols:  # If only performing neighborhood check on knee and extreme ones
+        if self.neighborhood_check_on_potential_sols:  # Only performing neighborhood check on knee and extreme ones
             self.solutions_collector = get_potential_solutions
         else:
             self.solutions_collector = get_all_solutions
@@ -114,7 +93,6 @@ class LOMONAS:
 
         if self.evaluator.n_eval % 100 == 0:
             self.debugger(algorithm=self)
-            self.sizeQ_logged.append(len(self.Q))
 
     """-------------------------------------------------- SOLVE -----------------------------------------------"""
     def solve(self, problem, max_eval, seed, **kwargs):
@@ -213,13 +191,6 @@ class LOMONAS:
         self.create_S(N)
 
         self.Q = self.create_Q(fid=0)
-
-        # For IMS-LOMONAS
-        # if is_changed(self.local_archive.archive, self.last_archive.archive):
-        #     self.last_archive = deepcopy(self.local_archive)
-        #     self.NIS = 0
-        # else:
-        #     self.NIS += 1
         return True
 
     def create_S(self, N):
@@ -233,8 +204,6 @@ class LOMONAS:
             for idx in idx_fronts[fid]:
                 P[idx].set('rank', fid)
         self.S = np.array(P)[idx_selected].tolist()
-
-        # if self.limit_Q_size:
         self.S = remove_duplicate(self.S)
 
     def create_Q(self, fid):
@@ -242,19 +211,6 @@ class LOMONAS:
                                                              last_S_fid=self.last_S_fid, last_Q=self.last_Q)
         if not duplicated:
             self.last_Q, self.last_S_fid = deepcopy(Q), last_S_fid.copy()
-
-        # # Limit the number of potential solutions for neighborhood checking
-        # if self.limit_Q_size:
-        #     # n_survive = min(len(Q), int(np.log2(self.max_eval)))
-        #     # n_survive = min(len(Q), 1 + 2 * int(np.log10(self.max_eval)))
-        #     n_survive = self.problem.n_obj + int(np.log10(self.max_eval))
-        #     if n_survive < len(Q):
-        #         pop = Population().empty(len(Q))
-        #         F = np.array([s.F for s in Q])
-        #         pop.set('F', F)
-        #
-        #         I = self.selector(pop=pop, n_survive=n_survive)
-        #         Q = np.array(Q)[I].tolist()
 
         return Q
 
@@ -517,120 +473,6 @@ def is_duplicated(genotypeHash_list1, genotypeHash_list2):
     return True
 
 ########################################################################################################################
-def calc_crowding_distance(F, filter_out_duplicates=True):
-    n_points, n_obj = F.shape
-
-    if n_points <= 2:
-        return np.full(n_points, np.inf)
-
-    else:
-
-        if filter_out_duplicates:
-            # filter out solutions which are duplicates - duplicates get a zero finally
-            is_unique = np.where(np.logical_not(find_duplicates(F, epsilon=1e-32)))[0]
-        else:
-            # set every point to be unique without checking it
-            is_unique = np.arange(n_points)
-
-        # index the unique points of the array
-        _F = F[is_unique]
-
-        # sort each column and get index
-        I = np.argsort(_F, axis=0, kind='mergesort')
-
-        # sort the objective space values for the whole matrix
-        _F = _F[I, np.arange(n_obj)]
-
-        # calculate the distance from each point to the last and next
-        dist = np.row_stack([_F, np.full(n_obj, np.inf)]) - np.row_stack([np.full(n_obj, -np.inf), _F])
-
-        # calculate the norm for each objective - set to NaN if all values are equal
-        norm = np.max(_F, axis=0) - np.min(_F, axis=0)
-        norm[norm == 0] = np.nan
-
-        # prepare the distance to last and next vectors
-        dist_to_last, dist_to_next = dist, np.copy(dist)
-        dist_to_last, dist_to_next = dist_to_last[:-1] / norm, dist_to_next[1:] / norm
-
-        # if we divide by zero because all values in one columns are equal replace by none
-        dist_to_last[np.isnan(dist_to_last)] = 0.0
-        dist_to_next[np.isnan(dist_to_next)] = 0.0
-
-        # sum up the distance to next and last and norm by objectives - also reorder from sorted list
-        J = np.argsort(I, axis=0)
-        _cd = np.sum(dist_to_last[J, np.arange(n_obj)] + dist_to_next[J, np.arange(n_obj)], axis=1) / n_obj
-
-        # save the final vector which sets the crowding distance for duplicates to zero to be eliminated
-        crowding = np.zeros(n_points)
-        crowding[is_unique] = _cd
-
-    return crowding
-
-def crowding_distance_selection(pop, n_survive, **kwargs):
-    # get the objective space values and objects
-    F = pop.get("F").astype(float, copy=False)
-
-    # calculate the crowding distance of the front
-    crowding_of_front = calc_crowding_distance(F)
-
-    # save crowding in the individual class
-    for i in range(len(pop)):
-        pop[i].set("crowding", crowding_of_front[i])
-
-    # current front sorted by crowding distance if splitting
-    I = randomized_argsort(crowding_of_front, order='descending', method='numpy')
-    I = I[:n_survive]
-    return I
-
-def greedy_selection(pop, n_survive, **kwargs):
-    F = pop.get('F')
-    front = [{'fitness': [f], 'index': i} for i, f in enumerate(F)]
-    selected_solutions = []
-
-    front = list(front)
-    front = sorted(front, key=lambda x: -x['fitness'][-1][0])
-
-    cur_selected_indices = set([])
-
-    selected_solutions.append(front[0])
-    cur_selected_indices.add(0)
-    while len(selected_solutions) < n_survive:
-        points1 = np.array([x['fitness'][-1] for x in front])
-        points2 = np.array([x['fitness'][-1] for x in selected_solutions])
-
-        distances = euclidean_distances(points1, points2)
-        cur_min_distances = np.min(distances, axis=1)
-
-        ind_with_max_dist = -1
-        max_dist = -float("inf")
-        for j in range(len(front)):
-            if j not in cur_selected_indices and cur_min_distances[j] > max_dist:
-                max_dist = cur_min_distances[j]
-                ind_with_max_dist = j
-        selected_solutions.append(front[ind_with_max_dist])
-        cur_selected_indices.add(ind_with_max_dist)
-    I = [s['index'] for s in selected_solutions]
-    return I
-
-# def random_selection(pop, n_survive, **kwargs):
-#     I = np.random.choice(range(len(pop)), n_survive, replace=False)
-#     return I
-
-def random_selection(pop, n_survive, **kwargs):
-    F = pop.get('F')
-    all_idx = list(range(len(pop)))
-    I = []
-    for i in range(F.shape[1]):
-        idx = np.argmin(F[:, i])
-        I.append(idx)
-        try:
-            all_idx.remove(idx)
-        except ValueError:
-            pass
-    I_ = np.random.choice(all_idx, n_survive - F.shape[1], replace=False).tolist()
-    I += I_
-    return I
-
 def remove_duplicate(pop):
     F = np.array([idv.F for idv in pop])
     is_unique = np.where(np.logical_not(find_duplicates(F, epsilon=1e-32)))[0]

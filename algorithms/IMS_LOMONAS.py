@@ -14,7 +14,6 @@ class IMS_LOMONAS:
     def __init__(self,
                  base=2,
                  check_limited_neighbors=False, neighborhood_check_on_potential_sols=False, alpha=210,
-                 selection_method=None,
                  perform_termination=True,
                  evaluator=None,
                  debugger=None):
@@ -22,7 +21,6 @@ class IMS_LOMONAS:
         self.check_limited_neighbors = check_limited_neighbors
         self.neighborhood_check_on_potential_sols = neighborhood_check_on_potential_sols
         self.alpha = alpha
-        self.selection_method = selection_method
         self.perform_termination = perform_termination
         self.base = base
 
@@ -36,9 +34,7 @@ class IMS_LOMONAS:
             'base': self.base,
             'check_limited_neighbors': self.check_limited_neighbors,
             'neighborhood_check_on_potential_sols': self.neighborhood_check_on_potential_sols,
-            'limit_Q_size': True,
             'alpha': self.alpha,
-            'selection_method': self.selection_method,
             'perform_termination': self.perform_termination
         }
 
@@ -121,8 +117,6 @@ class IMS_LOMONAS:
             name=kwargs['name'],
             nF=kwargs['nF'], neighborhood_check_on_potential_sols=self.neighborhood_check_on_potential_sols,
             check_limited_neighbors=self.check_limited_neighbors, alpha=self.alpha,
-            selection_method=self.selection_method,
-            limit_Q_size=True,
             debugger=self.debugger,
             evaluator=self.evaluator,
             res_logged=self.res_logged,
